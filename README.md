@@ -17,7 +17,7 @@ To start the slide show:
 
 [N]のところを回数に置き換えてください．
 
-- `pnpm build --base /Foundations-of-RL-5 --out docs`
+- `pnpm build --base /Foundations-of-RL-6 --out docs`
 
 ---
 

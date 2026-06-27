@@ -8,7 +8,7 @@ lineNumbers: true
 colorSchema: light
 ---
 
-# 強化学習講義 第5回
+# 強化学習講義 第六回
 
 シミュレータがあるときの強化学習アルゴリズム
 
