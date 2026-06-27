@@ -37,7 +37,7 @@ colorSchema: light
 
 ## 価値反復法のサンプル近似
 
-プランニングアルゴリズムである価値反復法（Q版）を思い出そう．
+プランニングアルゴリズムの価値反復法（Q版）を思い出そう．
 
 $$
 Q_{k+1}(s, a) \triangleq r(s, a) + \gamma \underbrace{\sum_{s' \in \mathcal{S} }P(s' \rvert s, a) \max_{a'} Q_k(s', a')}_{\text{ここを近似する}} \tag{1}
@@ -47,7 +47,7 @@ $$
 
 <div style="border: 2px solid #000; padding-top: 1px; padding-left: 10px; margin-top: 5px; background-color: #ffffe0;">
 
-**モデルフリー強化学習の概要**： 各イテレーション$k$で，
+**モデルフリー強化学習の概要**： $Q_0=\boldsymbol{0}$で初期化する．各イテレーション$k$で，
 1. 各$(s, a)\in \mathcal{S}\times\mathcal{A}$に対して，シミュレータから次状態$s'$を$N$個サンプルする．$(s'_1, s'_2, \ldots, s'_N)$
 2. 集めたサンプルで式(1)の二項目を近似する．
 $$

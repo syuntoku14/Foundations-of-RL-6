@@ -335,13 +335,14 @@ $$
 \end{aligned}
 $$
 
-本当に知りたいのは次の不等式であることに注意しよう．
+本当に知りたいのは次を抑える不等式であることに注意しよう．
 $$
 \| (P - \widehat{P}) V^\star_\gamma\|_\infty
 = \max_{s, a} \left| \mathbb{E}_{s'\sim P(\cdot \rvert s, a)} [V^\star_\gamma(s')]  - \mathbb{E}_{s'\sim \widehat{P}(\cdot \rvert s, a)} [V^\star_\gamma(s')]\right| \tag{2}
 $$
 
-確率$(1-\delta)$以上で適当な$(s, a)$について式(1)が成り立つからと言って，式(2)が成り立つわけではない．
+👨‍🏫 確率$(1-\delta)$以上で適当な$(s, a)$について式(1)が成り立つからと言って，$\| (P - \widehat{P}) V^\star_\gamma\|_\infty$が抑えられるとは限らない．
+もう少し工夫が必要だ．
 
 ---
 
@@ -409,7 +410,7 @@ V^{\widehat{\pi}^\star}_\gamma
 \geq V^\star_\gamma - \frac{2\gamma}{(1 - \gamma)^3} \sqrt{\frac{ \log (2|\mathcal{S}||\mathcal{A}|\delta^{-1})}{2N}} \boldsymbol{1}
 $$
 
-👨‍🏫 よって，十分大きい$N$で二項目が０に近づき，$\widehat{\pi}^\star$が最適方策に近づくことがわかる．
+👨‍🏫 よって，シミュレータからのサンプル数$N$を増やすと二項目が０に近づき，$\widehat{\pi}^\star$が最適方策に近づく．
 
 </div>
 
