@@ -74,7 +74,7 @@ def model_based_rl(mdp: MDP, N: int):
 
 ## モデルベース強化学習の性能証明 ①
 
-$\widehat{P} \approx P$のとき，本当に$\widehat{\pi}^\star$は最適方策になるだろうか？実は次が成立する：
+$\widehat{P} \approx P$のとき，本当に$\widehat{\pi}^\star$は近似最適方策になるだろうか？実は次が成立する：
 
 <div style="border: 2px solid #000; padding-top: 1px; padding-left: 10px; margin-top: 5px; background-color: rgb(220, 241, 255);">
 
@@ -115,9 +115,9 @@ $$
 \begin{aligned}
 Q^\pi_\gamma - \widehat{Q}^\pi_\gamma 
 &= (I - \gamma \bar{P}_\pi)^{-1} r - (I - \gamma \widehat{\bar{P}}_\pi)^{-1} r  \quad \text{（Q関数の逆行列表記）}\\
-&= (I - \gamma \widehat{\bar{P}}_\pi)^{-1}\left((I - \gamma \widehat{\bar{P}}_\pi) - (I - \gamma P_\pi)\right)Q^\pi_\gamma \\
+&= (I - \gamma \widehat{\bar{P}}_\pi)^{-1}\left((I - \gamma \widehat{\bar{P}}_\pi) - (I - \gamma \bar{P}_\pi)\right)Q^\pi_\gamma \\
 &= \gamma(I - \gamma \widehat{\bar{P}}_\pi)^{-1}\left(\bar{P}_\pi - \widehat{\bar{P}}_\pi\right)Q^\pi_\gamma 
-= \gamma(I - \gamma \widehat{\bar{P}}_\pi)^{-1}\left(P- \widehat{\bar{P}}\right)V^\pi_\gamma 
+= \gamma(I - \gamma \widehat{\bar{P}}_\pi)^{-1}\left(P- \widehat{P}\right)V^\pi_\gamma
 \end{aligned}
 $$
 
@@ -149,7 +149,7 @@ $$
 **証明** １つ目の不等式を示そう．シミュレーション補題から，次が成り立つ．
 
 $$
-Q^{\star}_\gamma-\widehat{Q}^{\star}_\gamma=Q_\gamma^{\pi^{\star}}-\widehat{Q}_\gamma^{\widehat{\pi}^{\star}} \leq Q_\gamma^{\pi^{\star}}-\widehat{Q}_\gamma^{\pi^{\star}}=\gamma\left(I-\gamma \widehat{\bar{P}}_{\pi^{\star}}\right)^{-1}(P-\widehat{\bar{P}}) V^{\star}_\gamma
+Q^{\star}_\gamma-\widehat{Q}^{\star}_\gamma=Q_\gamma^{\pi^{\star}}-\widehat{Q}_\gamma^{\widehat{\pi}^{\star}} \leq Q_\gamma^{\pi^{\star}}-\widehat{Q}_\gamma^{\pi^{\star}}=\gamma\left(I-\gamma \widehat{\bar{P}}_{\pi^{\star}}\right)^{-1}(P-\widehat{P}) V^{\star}_\gamma
 $$
 
 ---
@@ -159,18 +159,18 @@ $$
 $$
 \begin{aligned}
 Q_\gamma^{\star}-\widehat{Q}_\gamma^{\star} & =Q_\gamma^{\pi^{\star}}-\widehat{Q}_\gamma^{\widehat{\pi}^{\star}} \\
-& =(1-\gamma)\left(\left(I-\gamma \bar{P}_{\pi^{\star}}\right)^{-1} r-\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)^{-1} r\right) \\
-& =\left(I-\gamma \widehat{\bar{P}}_{\pi^{\star}}\right)^{-1}\left(\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)-\left(I-\gamma \bar{P}_{\pi^{\star}}\right)\right) Q_\gamma^{\star} \\
-& =\gamma\left(I-\gamma \widehat{\bar{P}}_{\pi^{\star}}\right)^{-1}\left(\bar{P}_{\pi^{\star}}-\widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right) Q_\gamma^{\star}
+& =\left(\left(I-\gamma \bar{P}_{\pi^{\star}}\right)^{-1} r-\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)^{-1} r\right) \\
+& =\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)^{-1}\left(\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)-\left(I-\gamma \bar{P}_{\pi^{\star}}\right)\right) Q_\gamma^{\star} \\
+& =\gamma\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)^{-1}\left(\bar{P}_{\pi^{\star}}-\widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right) Q_\gamma^{\star}
 \end{aligned}
 $$
 
-ここで，$\pi^\star$の$M$での最適性から，$\widehat{\bar{P}}_{\widehat{\pi}^{\star}}Q^\star_\gamma \leq \widehat{\bar{P}}_{\pi^{\star}}Q^\star_\gamma$が成り立つので，
+ここで，$\pi^\star$の$M$での最適性から，$\widehat{\bar{P}}_{\widehat{\pi}^{\star}}Q^\star_\gamma \leq \widehat{\bar{P}}_{\pi^{\star}}Q^\star_\gamma$が成り立つ．逆行列の各成分も非負なので，
 
 $$
 \begin{aligned}
-& \geq \gamma\left(I-\gamma \widehat{\bar{P}}_{\pi^{\star}}\right)^{-1}\left(\bar{P}_{\pi^{\star}}-\widehat{\bar{P}}_{\pi^{\star}}\right) Q_\gamma^{\star}\\
-& =\gamma\left(I-\gamma \widehat{\bar{P}}_{\pi^{\star}}\right)^{-1}(P-\widehat{\bar{P}}) V^{\star},
+& \geq \gamma\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)^{-1}\left(\bar{P}_{\pi^{\star}}-\widehat{\bar{P}}_{\pi^{\star}}\right) Q_\gamma^{\star}\\
+& =\gamma\left(I-\gamma \widehat{\bar{P}}_{\widehat{\pi}^{\star}}\right)^{-1}(P-\widehat{P}) V^{\star}_\gamma,
 \end{aligned}
 $$
 
@@ -182,22 +182,22 @@ $$
 
 <div style="border: 2px solid #000; padding-top: 1px; padding-left: 10px; margin-top: 5px; background-color: rgb(220, 241, 255);">
 
-**$(I-\gamma \bar{P}_\pi)^{-1} v$のバウンド**： 任意の$v \in \mathbb{R}^{|\mathcal{S}|}$と$\pi$について，
-$\| (I - \gamma \bar{P}_\pi)^{-1} v \|_\infty \leq \frac{1}{1 - \gamma} \|v\|_\infty$．
+**$(I-\gamma \bar{P}_\pi)^{-1} q$のバウンド**： 任意の$q \in \mathbb{R}^{|\mathcal{S}||\mathcal{A}|}$と$\pi$について，
+$\| (I - \gamma \bar{P}_\pi)^{-1} q \|_\infty \leq \frac{1}{1 - \gamma} \|q\|_\infty$．
 
 </div> 
 
-**証明** $v = (I - \gamma \bar{P}_\pi)^{-1} (I - \gamma \bar{P}_\pi) v = (I - \gamma \bar{P}_\pi) w$である．ここで，$w= (I - \gamma \bar{P}_\pi)^{-1} v$とする．\
+**証明** $q = (I - \gamma \bar{P}_\pi)^{-1} (I - \gamma \bar{P}_\pi) q = (I - \gamma \bar{P}_\pi) w$である．ここで，$w= (I - \gamma \bar{P}_\pi)^{-1} q$とする．\
 三角不等式から，
 
 $$
-\|v\|_\infty = \|(I - \gamma \bar{P}_\pi) w\|_\infty \geq \|w\|_\infty - \gamma \|\bar{P}_\pi w\|_\infty 
+\|q\|_\infty = \|(I - \gamma \bar{P}_\pi) w\|_\infty \geq \|w\|_\infty - \gamma \|\bar{P}_\pi w\|_\infty 
 $$
 
 ここで，$\bar{P}_\pi$は確率行列なので，$\|\bar{P}_\pi w\|_\infty \leq \|w\|_\infty$が成り立つ．よって，
 
 $$
-\|v\|_\infty \geq \|w\|_\infty - \gamma \|w\|_\infty = (1 - \gamma) \|w\|_\infty
+\|q\|_\infty \geq \|w\|_\infty - \gamma \|w\|_\infty = (1 - \gamma) \|w\|_\infty
 $$
 
 あとは変形して証明終わり．
@@ -205,7 +205,7 @@ $$
 ---
 
 本題に戻ろう．\
-「**$Q^\star$と$\widehat{Q}^\star$の差**」 と 「**$(I-\gamma \bar{P}_\pi)^{-1} v$のバウンド**」を組み合わせると，
+「**$Q^\star$と$\widehat{Q}^\star$の差**」 と 「**$(I-\gamma \bar{P}_\pi)^{-1} q$のバウンド**」を組み合わせると，
 
 $$
 \|Q^\star_\gamma - \widehat{Q}^\star_\gamma\|_\infty \leq \frac{\gamma}{1-\gamma}\| (P - \widehat{P}) V^\star_\gamma\|_\infty
@@ -230,14 +230,14 @@ $$
 
 </div>
 
-**証明** $a \in \argmax_{a'} Q$と略記する．このとき，
+**証明** 状態$s$を固定し，$a=\pi_Q(s)\in\argmax_{a'}Q(s,a')$とする．このとき，
 
 $$
 \begin{aligned}
-V^\star_\gamma - V^{\pi_Q}_\gamma 
-= & V^\star_\gamma -Q_\gamma^{\pi_Q}(s, a) \\
-= & V^\star_\gamma -Q_\gamma^{\star}(s, a)+Q_\gamma^{\star}(s, a)-Q_\gamma^{\pi_Q}(s, a) \\
-= & V^\star_\gamma -Q_\gamma^{\star}(s, a)+\gamma \mathbb{E}_{s^{\prime} \sim P(\cdot \mid s, a)}\left[V^{\star}_\gamma\left(s^{\prime}\right)-V^{\pi_Q}_\gamma\left(s^{\prime}\right)\right] \\
+V^\star_\gamma(s) - V^{\pi_Q}_\gamma(s)
+= & V^\star_\gamma(s) -Q_\gamma^{\pi_Q}(s, a) \\
+= & V^\star_\gamma(s) -Q_\gamma^{\star}(s, a)+Q_\gamma^{\star}(s, a)-Q_\gamma^{\pi_Q}(s, a) \\
+= & V^\star_\gamma(s) -Q_\gamma^{\star}(s, a)+\gamma \mathbb{E}_{s^{\prime} \sim P(\cdot \mid s, a)}\left[V^{\star}_\gamma\left(s^{\prime}\right)-V^{\pi_Q}_\gamma\left(s^{\prime}\right)\right] \\
 \end{aligned}
 $$
 
@@ -247,13 +247,13 @@ $$
 
 $$
 \begin{aligned}
-V^\star_\gamma - V^{\pi_Q}_\gamma 
-\leq & Q_\gamma^{\star}\left(s, \pi^{\star}(s)\right)-Q\left(s, \pi^{\star}(s)\right)+Q(s, a)-Q_\gamma^{\star}(s, a) +\gamma \mathbb{E}_{s^{\prime} \sim P(s, a)}\left[V^{\star}\left(s^{\prime}\right)-V^{\pi_Q}\left(s^{\prime}\right)\right] \\
+V^\star_\gamma(s) - V^{\pi_Q}_\gamma(s)
+\leq & Q_\gamma^{\star}\left(s, \pi^{\star}(s)\right)-Q\left(s, \pi^{\star}(s)\right)+Q(s, a)-Q_\gamma^{\star}(s, a) +\gamma \mathbb{E}_{s^{\prime} \sim P(\cdot\mid s, a)}\left[V^{\star}_\gamma\left(s^{\prime}\right)-V^{\pi_Q}_\gamma\left(s^{\prime}\right)\right] \\
 \leq & 2\left\|Q-Q_\gamma^{\star}\right\|_{\infty}+\gamma\left\|V^{\star}_\gamma-V^{\pi_Q}_\gamma\right\|_{\infty} .
 \end{aligned}
 $$
 
-あとは変形して証明終わり．
+両辺で状態$s$について最大値を取り，移項すれば証明終わり．
 
 
 ---
@@ -293,13 +293,13 @@ $N$を増やして$\| (P - \widehat{P}) V^\star_\gamma\|_\infty$が小さくな�
 
 ## モデルベース強化学習の性能証明 ③
 
-前回学んだHoeffdingの不等式を思い出そう．必要なサンプル数$N$についての下限が求まる．
+前回学んだHoeffdingの不等式を思い出そう．所望の精度を保証するのに十分なサンプル数$N$が求まる．
 
 <div style="border: 2px solid #000; padding-top: 1px; padding-left: 10px; margin-top: 5px; background-color: rgb(220, 241, 255);">
 
 （復習）
 **Hoeffdingの不等式**<sup>1</sup>：確率変数$X_1, X_2, \ldots, X_N$が独立かつ有界で，その値が$a \leq X_i \leq b$で収まっているとする．
-このとき，$\mu_n = \frac{1}{N} \sum^{N}_{i=1} X_i$について，
+このとき，$\mu_N = \frac{1}{N} \sum^{N}_{i=1} X_i$について，
 
 $$
 \mathbb{P}\left(|\mu_N - \mathbb{E}[\mu_N]| > \epsilon\right) \leq 2\exp\left(-\frac{ 2 N \epsilon^2}{(b - a)^2}\right) 
@@ -383,7 +383,7 @@ $$
 
 ---
 
-Union boundを使うと，任意の$(s, a) \in \mathcal{S}\times\mathcal{A}$に対して，確率$1 - |\mathcal{S}||\mathcal{A}|\delta$以上で次が成り立つ：
+Union boundを使うと，確率$1 - |\mathcal{S}||\mathcal{A}|\delta$以上で，すべての$(s, a) \in \mathcal{S}\times\mathcal{A}$について同時に次が成り立つ：
 
 $$
 \begin{aligned}
@@ -412,7 +412,7 @@ V^{\widehat{\pi}^\star}_\gamma
 \geq V^\star_\gamma - \frac{2\gamma}{(1 - \gamma)^3} \sqrt{\frac{ \log (2|\mathcal{S}||\mathcal{A}|\delta^{-1})}{2N}} \boldsymbol{1}
 $$
 
-👨‍🏫 よって，シミュレータからのサンプル数$N$を増やすと二項目が０に近づき，$\widehat{\pi}^\star$が最適方策に近づく．
+👨‍🏫 よって，シミュレータからのサンプル数$N$を増やすと第2項が０に近づき，$\widehat{\pi}^\star$が最適方策に近づく．
 
 </div>
 
@@ -427,18 +427,19 @@ $$
 import matplotlib.pyplot as plt
 
 Q_star, _ = value_iteration_q(mdp, 1e-4) 
-V_star = np.max(Q_star, axis=1)  # 真の最適価値関数
+V_star = np.max(Q_star, axis=1)  # 最適価値関数の数値近似
 
 V_gaps = []  # 最適価値関数とのギャップを保存するリスト
 
-for N in range(1, 150):
+samples = range(1, 150)
+for N in samples:
     _, pol_hat = model_based_rl(mdp, N)
     V_pol_hat = evaluate_policy(mdp, pol_hat)  # 第２回を思い出して実装しよう．
 
     V_gap = np.max(np.abs(V_star - V_pol_hat))  # 最適価値関数とのギャップ
     V_gaps.append(V_gap)
 
-plt.plot(V_gaps)
+plt.plot(samples, V_gaps)
 plt.xlabel('Sample Size N')
 plt.ylabel(r'$\|V^{\widehat{\pi}^\star}_\gamma - V^\star_\gamma\|_\infty$')
 ```

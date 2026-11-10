@@ -18,7 +18,7 @@ colorSchema: light
 
 モデルベース強化学習では$P$を推定した．
 
-これは$|\mathcal{S}|^2|\mathcal{A}|$個のパラメタを推定しないといけないので，メモリ効率が悪い．
+今回の方法は$|\mathcal{S}|^2|\mathcal{A}|$要素の遷移表を保存するので，状態数が多いとメモリ消費が大きい．
 
 また，$P$を推定する ≒ 「現実の環境をシミュレートする」だが，一部の意思決定問題は環境全てをシミュレートする必要がない．
 例えば玉ねぎを切る時，頭の中で玉ねぎの物理現象を細かく考える必要はないだろう．
@@ -43,17 +43,17 @@ $$
 Q_{k+1}(s, a) \triangleq r(s, a) + \gamma \underbrace{\sum_{s' \in \mathcal{S} }P(s' \rvert s, a) \max_{a'} Q_k(s', a')}_{\text{ここを近似する}} \tag{1}
 $$
 
-今回は$P$がわからない．そこで，シミュレータから$s'$をサンプルして，二項目をモンテカルロ近似しよう．
+今回は$P$がわからない．そこで，シミュレータから$s'$をサンプルして，第2項をモンテカルロ近似しよう．
 
 <div style="border: 2px solid #000; padding-top: 1px; padding-left: 10px; margin-top: 5px; background-color: #ffffe0;">
 
-**モデルフリー強化学習の概要**： $Q_0=\boldsymbol{0}$で初期化する．各イテレーション$k$で，
-1. 各$(s, a)\in \mathcal{S}\times\mathcal{A}$に対して，シミュレータから次状態$s'$を$N$個サンプルする．$(s'_1, s'_2, \ldots, s'_N)$
-2. 集めたサンプルで式(1)の二項目を近似する．
+**モデルフリー強化学習の概要**： $Q_0=\boldsymbol{0}$で初期化する．$k=0,\ldots,K-1$で，
+1. 各$(s,a)$で，過去のサンプルとは独立に次状態$s'_1,\ldots,s'_N$を$P(\cdot\mid s,a)$からサンプルする．
+2. 集めたサンプルで式(1)の第2項を近似する．
 $$
-\widehat{V}_k(s') \triangleq \frac{1}{N}\sum_{i=1}^N \max_{a'} Q_k(s'_i, a')
+\widehat{u}_k(s,a) \triangleq \frac{1}{N}\sum_{i=1}^N \max_{a'} Q_k(s'_i, a')
 $$
-3. 価値関数を$Q_{k+1}(s, a) = r(s, a) + \gamma \widehat{V}_k(s')$で更新する．
+3. 同じ$Q_k$を使って，全成分を$Q_{k+1}(s,a)=r(s,a)+\gamma\widehat u_k(s,a)$で更新する．
 
 </div>
 
@@ -75,18 +75,18 @@ def model_free_rl(mdp: MDP, N: int, K: int = 1000):
     """モデルフリー強化学習アルゴリズムの実装．簡単のためにmdp.Pも受け取っているが，これは未知だと思ってほしい．"""
     q = np.zeros((mdp.S, mdp.A))  # 初期価値関数
     for k in range(K):
+        v = q.max(axis=1)  # この反復では更新前のQ値から計算した値を固定
         for (s, a) in product(range(mdp.S), range(mdp.A)):
             next_states = np.random.choice(mdp.S, p=mdp.P[s, a], size=N)  # MDPの遷移確率から次状態をN個サンプル
-            v = q.max(axis=1)
             next_v = v[next_states].mean()  # サンプルした次状態の価値の平均
             q[s, a] = mdp.r[s, a] + mdp.gamma * next_v  # Q関数の更新
 
-    pol = compute_greedy_policy(q)  # 貪欲方策の計算
+    pol = compute_greedy_policy(q)  # Q_Kの貪欲方策 pi_{K+1}
     return pol
 ```
 
 🤔 ``model_based_rl``では``P=np.zeros((mdp.S, mdp.A, mdp.S))``を更新していたことを思い出そう．\
-今回は``Q=np.zeros((mdp.S, mdp.A))``の変数しか使っていない．
+今回は遷移表を保存せず，Q表と一時的なサンプルなどを使っている．
 
 ---
 
@@ -105,7 +105,7 @@ $$
 
 <div style="border: 2px solid #000; padding-top: 1px; padding-left: 10px; margin-top: 5px;">
 
-🤔 サンプル数$N$が増えると$\epsilon_{k+1}$は小さくなる．これはモンテカルロ近似そのものなので，証明は省略<sup>1</sup>
+🤔 $N$を増やすと，モンテカルロ近似の誤差を高確率で小さくできる：
 $$
 \frac{1}{N}\sum_{i=1}^N \max_{a'} Q_k(s'_i, a')  \approx \sum_{s'} P(s' \rvert s, a) \max_{a'} Q_k(s', a')
 $$
@@ -116,32 +116,51 @@ $$
 
 $Q_k$の更新で生じた誤差$\epsilon_k$は$Q_{k+1}$に残り，$Q_{k+2}$に残り，$\ldots$と伝播していく．
 
-🤔 $|\epsilon_k| \leq \epsilon$としよう．どれくらい誤差$\epsilon$が小さくなれば，$\pi_K$は最適方策に近くなるだろう？
+🤔 すべての$k=1,\ldots,K$で$\|\epsilon_k\|_\infty\leq\epsilon$としよう．誤差は方策の性能にどう影響するだろう？
 
 </div>
 
-<div style="font-size: 0.7em; text-align: left; position: absolute; bottom: -10px; left: 20px;">
+---
+hideInToc: true
+---
 
-[1] Hoeffdingの不等式と（Covering numberによる）Union boundを使う．ややこしいので省略する or 後日追記しておく．
+## サンプル誤差の確率保証
 
-</div>
+$N$は各反復・各状態行動対あたりの数．総サンプル数は$K|\mathcal S||\mathcal A|N$．
+
+$r(s,a)\in[0,1]$，$0\leq\gamma<1$とする．$Q_0=0$からの更新では，常に$0\leq Q_k(s,a)\leq(1-\gamma)^{-1}$．
+
+過去のサンプルに条件づけると$Q_k$は固定され，次の$N$個のサンプルは独立である．
+Hoeffdingの不等式と，$K|\mathcal S||\mathcal A|$個の更新に対するUnion boundより，確率$1-\delta$以上で，
+
+$$
+\forall k=1,\ldots,K:\quad
+\|\epsilon_k\|_\infty
+\leq\underbrace{\frac{\gamma}{1-\gamma}
+\sqrt{\frac{\log(2K|\mathcal S||\mathcal A|/\delta)}{2N}}}_{\epsilon\text{とおく}}.
+$$
+
+以下では，この事象のもとで誤差の伝搬を解析する．初期化に対応して$\epsilon_0=0$とおく．
+
+実装の出力は$Q_K$の貪欲方策$\pi_{K+1}$．最後に，その状態価値の性能も評価する．
 
 ---
 
 ## モデルフリー強化学習の性能証明：誤差伝搬解析
 
 
-$\pi_k$と最適価値関数の差は次のように分解できる．任意の$s, a$について$Q^\star_\gamma \geq Q^{\pi_k}_\gamma$なので，
+方策$\pi_k$の行動価値と最適行動価値の差は次のように分解できる．任意の$s, a$について$Q^\star_\gamma \geq Q^{\pi_k}_\gamma$なので，
 $$
 \begin{aligned}
-\|Q^\star_\gamma - Q^{\pi_k}_\gamma \|_\infty 
-& = \max_{s, a} Q^\star_\gamma(s, a) - Q_k(s, a) + \epsilon_k(s, a) + Q_k(s, a) - \epsilon_k(s, a) - Q^\star_\gamma(s, a)\\
-& = \max_{s, a} \underbrace{Q^\star_\gamma(s, a) - Q_k(s, a) + \epsilon_k(s, a)}_{\alpha_k(s, a) \text{と置く}} + 
-\max_{s, a} \underbrace{Q_k(s, a) - \epsilon_k(s, a) - Q^\star_\gamma(s, a)}_{\beta_k(s, a) \text{と置く}}\\
+\|Q^\star_\gamma - Q^{\pi_k}_\gamma \|_\infty
+&=\max_{s,a}\{\alpha_k(s,a)+\beta_k(s,a)\}\\
+&\leq\max_{s,a}\alpha_k(s,a)+\max_{s,a}\beta_k(s,a),\\
+\alpha_k(s,a)&:=Q^\star_\gamma(s,a)-Q_k(s,a)+\epsilon_k(s,a),\\
+\beta_k(s,a)&:=Q_k(s,a)-\epsilon_k(s,a)-Q^{\pi_k}_\gamma(s,a).
 \end{aligned}
 $$
 
-この１項目と２項目をそれぞれバウンドすることで，$\pi_k$の最適性を解析する．
+この第1項と第2項をそれぞれバウンドすることで，$\pi_k$の最適性を解析する．
 
 
 <div style="font-size: 0.7em; text-align: left; position: absolute; bottom: 5px; left: 20px;">
@@ -200,7 +219,7 @@ $$
 \end{aligned}
 $$
 
-ここで，$Q_0$を０で初期化して，かつ報酬が$\|r\|_\infty \leq 1$のとき，$\alpha_0 = Q^\star_\gamma - \underbrace{Q_{0}}_{=0} - \underbrace{\epsilon_{0}}_{=0} \leq 1 / (1-\gamma)$が成り立つ．
+ここで，$Q_0$を０で初期化して，かつ報酬が$\|r\|_\infty \leq 1$のとき，$\alpha_0 = Q^\star_\gamma - \underbrace{Q_{0}}_{=0} + \underbrace{\epsilon_{0}}_{=0} \leq 1 / (1-\gamma)$が成り立つ．
 よって，
 
 $$
@@ -255,14 +274,18 @@ c_k &= Q_k - T_{\pi_{k+1}} Q_k
 \end{aligned}
 $$
 
-最後の等式はベルマン作用素の定義に従って，次の変形を使った：
+---
+hideInToc: true
+---
+
+前の等式はベルマン作用素の定義に従って，次の変形を使った：
 
 $$
 \begin{aligned}
 &T_{\pi_{k}} (Q_k - \epsilon_k + \epsilon_k)(s, a) \\
-= &r(s, a) + \sum_{s', a'} \bar{P}_{\pi_k}(s', a' \rvert s, a) (Q_k(s', a') - \epsilon_k(s', a') + \epsilon_k(s', a'))\\
-= &r(s, a) + \sum_{s', a'} \bar{P}_{\pi_k}(s', a' \rvert s, a) (Q_k(s', a') - \epsilon_k(s', a'))
- + \sum_{s', a'} \bar{P}_{\pi_k}(s', a' \rvert s, a) \epsilon_k(s', a') \\
+= &r(s, a) + \gamma\sum_{s', a'} \bar{P}_{\pi_k}(s', a' \rvert s, a) (Q_k(s', a') - \epsilon_k(s', a') + \epsilon_k(s', a'))\\
+= &r(s, a) + \gamma\sum_{s', a'} \bar{P}_{\pi_k}(s', a' \rvert s, a) (Q_k(s', a') - \epsilon_k(s', a'))
+ + \gamma\sum_{s', a'} \bar{P}_{\pi_k}(s', a' \rvert s, a) \epsilon_k(s', a') \\
 \end{aligned}
 $$
 
@@ -270,9 +293,9 @@ $$
 
 $$
 \begin{aligned}
-c_k 
-= \underbrace{(Q_k - \epsilon_k)}_{T_{\pi_k} Q_{k-1}} - T_{\pi_{k}} \underbrace{(Q_k - \epsilon_k)}_{T_{\pi_k} Q_{k-1}} + \underbrace{\epsilon_k - \gamma \bar{P}_{\pi_k} \epsilon_k}_{I - \gamma\bar{P}_{\pi_k} \epsilon_k} 
-= \gamma \bar{P}_{\pi_k} \underbrace{(Q_{k-1} - T_{\pi_k} Q_{k-1})}_{c_{k-1}} + I - \gamma \bar{P}_{\pi_k} \epsilon_k 
+c_k
+&\leq \underbrace{(Q_k - \epsilon_k)}_{T_{\pi_k} Q_{k-1}} - T_{\pi_k}\underbrace{(Q_k - \epsilon_k)}_{T_{\pi_k} Q_{k-1}} + (I-\gamma\bar P_{\pi_k})\epsilon_k\\
+&=\gamma\bar P_{\pi_k}\underbrace{(Q_{k-1}-T_{\pi_k}Q_{k-1})}_{c_{k-1}}+(I-\gamma\bar P_{\pi_k})\epsilon_k
 \end{aligned}
 $$
 
@@ -299,7 +322,7 @@ $$
 \end{aligned}
 $$
 
-ここで，$c_0(s, a) = Q_0(s, a) - T_{\pi_q} Q_0(s, a) = -r(s, a)$なので，$|r(s, a)| \leq 1$ならば，
+ここで，$c_0(s, a) = Q_0(s, a) - T_{\pi_1} Q_0(s, a) = -r(s, a)$なので，$|r(s, a)| \leq 1$ならば，
 
 $$
 \max_{s, a}c_k(s, a) \leq \gamma^k + \frac{1+\gamma}{1-\gamma} \epsilon
@@ -316,20 +339,49 @@ hideInToc: true
 $$
 \begin{aligned}
 \|Q^\star_\gamma - Q^{\pi_k}_\gamma \|_\infty 
-&\leq \underbrace{\max_{s, a} \alpha_k(s, a)}_{\leq \frac{\gamma^k}{1-\gamma} + \frac{\gamma}{1-\gamma}\epsilon} + \underbrace{\max_{s, a} \beta_k(s, a)}_{\frac{\gamma}{1-\gamma}\max_{s, a}c_k(s, a)}\\
+&\leq \underbrace{\max_{s, a} \alpha_k(s, a)}_{\leq \frac{\gamma^k}{1-\gamma} + \frac{\gamma}{1-\gamma}\epsilon} + \underbrace{\max_{s, a} \beta_k(s, a)}_{\leq\frac{\gamma}{1-\gamma}\max_{s, a}c_{k-1}(s, a)}\\
 & \leq 
 \frac{\gamma^k}{1-\gamma} + \frac{\gamma}{1-\gamma}\epsilon
-+ \frac{\gamma}{1-\gamma}\underbrace{\max_{s, a}c_k(s, a)}_{\leq \gamma^k + \frac{1+\gamma}{1-\gamma} \epsilon}\\
++ \frac{\gamma}{1-\gamma}\underbrace{\max_{s, a}c_{k-1}(s, a)}_{\leq \gamma^{k-1} + \frac{1+\gamma}{1-\gamma} \epsilon}\\
 & \leq 
 \underbrace{\frac{2\gamma^k}{1-\gamma}}_{価値反復法の収束} + \underbrace{\frac{\gamma}{1-\gamma}\epsilon + \frac{\gamma(1+\gamma)}{(1-\gamma)^2} \epsilon}_{誤差の伝搬}
 \end{aligned}
 $$
 
-* 一項目は価値反復法自体の収束速度．イテレーション$k$を増やすと$0$に収束する．
-* 二項目は近似によって生じた誤差．$\epsilon$が小さくなると，この項も小さくなる．\
+* 第1項は価値反復法自体の収束速度．イテレーション$k$を増やすと$0$に収束する．
+* 第2項は近似によって生じた誤差．$\epsilon$が小さくなると，この項も小さくなる．\
 （$N$が大きくなると$\epsilon$が小さくなる．）
 
 </div>
+
+---
+hideInToc: true
+---
+
+## 出力方策の状態価値の保証
+
+実験では状態価値の誤差を測る．$Q^\pi_\gamma$の誤差とは別に，$Q_K$の近似誤差から評価しよう．
+
+ベルマン最適作用素$T$の縮小性と$Q_0=0$より，
+
+$$
+\begin{aligned}
+\|Q_{k+1}-Q^\star_\gamma\|_\infty
+&\leq\gamma\|Q_k-Q^\star_\gamma\|_\infty+\epsilon,\\
+\|Q_K-Q^\star_\gamma\|_\infty
+&\leq\frac{\gamma^K}{1-\gamma}+\frac{\epsilon}{1-\gamma}.
+\end{aligned}
+$$
+
+$\pi_{K+1}$は$Q_K$の貪欲方策なので，前半の「Q関数の誤差増幅」を使うと，
+
+$$
+\|V^\star_\gamma-V^{\pi_{K+1}}_\gamma\|_\infty
+\leq\frac{2}{1-\gamma}\|Q_K-Q^\star_\gamma\|_\infty
+\leq\frac{2\gamma^K}{(1-\gamma)^2}+\frac{2\epsilon}{(1-\gamma)^2}.
+$$
+
+前述の$\epsilon$を代入すれば，確率$1-\delta$以上での性能保証が得られる．
 
 ---
 
@@ -341,7 +393,7 @@ $$
 import matplotlib.pyplot as plt
 
 Q_star, _ = value_iteration_q(mdp, 1e-4)
-V_star = np.max(Q_star, axis=1)  # 真の最適価値関数
+V_star = np.max(Q_star, axis=1)  # 最適価値関数
 for K in [5, 100]:
   V_gaps = []  # 最適価値関数とのギャップを保存するリスト
   samples = []
@@ -356,7 +408,7 @@ for K in [5, 100]:
   plt.plot(samples, V_gaps, label=r"$K=$"+str(K))
 
 plt.xlabel('Sample Size N')
-plt.ylabel(r'$\|V^{\pi_K}_\gamma - V^\star_\gamma\|_\infty$')
+plt.ylabel(r'$\|V^{\pi_{K+1}}_\gamma - V^\star_\gamma\|_\infty$')
 plt.legend()
 ```
 
